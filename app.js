@@ -94,6 +94,14 @@ function deriveRecommendations(home) {
       status = charging >= 500 ? "avoid" : "caution";
       reason = charging >= 500 ? `Напруга ${voltage} В і заряджання ${charging} Вт` :
         `Напруга ${voltage} В - лише з обережністю`;
+    } else if (voltage > 260) {
+      status = "avoid"; reason = `Висока напруга ${voltage} В`;
+    } else if (voltage >= 254) {
+      if (charging > 1500) {
+        status = "avoid"; reason = `Висока напруга ${voltage} В і заряджання ${charging} Вт`;
+      } else {
+        status = "caution"; reason = `Висока напруга ${voltage} В - лише з обережністю`;
+      }
     } else if (charging > 1500) {
       status = "avoid"; reason = `Станція заряджається на ${charging} Вт`;
     } else if (charging > 1000) {
