@@ -54,6 +54,13 @@ dd { margin: 4px 0 0; font-size: clamp(1.25rem, 3vw, 1.8rem); font-weight: 750; 
 .voltage-yellow { color: #f2c14e; }
 .voltage-red { color: #ff7f85; }
 .voltage-neutral { color: #f5f7fa; }
+.power-neutral { color: #f5f7fa; }
+.power-input-zero { color: #d58f93; }
+.power-output-green { color: #56e39f; }
+.power-output-yellow { color: #f2c14e; }
+.power-output-orange { color: #ffad66; }
+.power-output-red { color: #ff7f85; }
+.power-output-deep-red { color: #ff5361; }
 .remaining { grid-column: 1 / -1; }
 .freshness { margin: 14px 0 0; color: #9eabbc; font-size: .95rem; }
 @media (orientation: portrait) {

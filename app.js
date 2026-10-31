@@ -3,7 +3,7 @@
 const MAX_FRESHNESS_MS = 300000;
 const CLOCK_SKEW_MS = 120000;
 const UNAVAILABLE_REASON = "Дані застаріли - рекомендацією не користуватися";
-const RECOMMENDATION_POLICY_VERSION = 1;
+const RECOMMENDATION_POLICY_VERSION = 2;
 const APPLIANCES = [
   {id: "kettle", name: "Електрочайник", watts: 2000, allowedSoc: 50, cautionSoc: 35},
   {id: "microwave", name: "Мікрохвильовка", watts: 1400, allowedSoc: 40, cautionSoc: 25},
@@ -73,7 +73,7 @@ function adviceItem(appliance, status, reason) {
   return {id: appliance.id, name: appliance.name, status, reason};
 }
 
-// Mirrored implementation of recommendation-policy-v1.md. Python-generated
+// Mirrored implementation of recommendation-policy-v2.md. Python-generated
 // exhaustive boundary fixtures are the cross-runtime conformance oracle.
 function deriveRecommendations(home) {
   if (!home.available || home.gridState === "unknown") {
@@ -130,7 +130,11 @@ function deriveRecommendations(home) {
   const rank = {allowed: 0, caution: 1, avoid: 2, unknown: 3};
   const status = items.reduce((worst, item) => rank[item.status] > rank[worst] ? item.status : worst, "allowed");
   const reason = items.find(item => item.status === status).reason;
-  const simultaneousWarning = items.every(item => item.status === "allowed" || item.status === "caution") ?
+  const warningContext = home.gridState === "present" &&
+    ((home.acInputVolts >= 205 && home.acInputVolts <= 214) ||
+     (home.acInputVolts >= 215 && home.acInputVolts <= 253 && home.state === "charging"));
+  const simultaneousWarning = warningContext &&
+    items.every(item => item.status === "allowed" || item.status === "caution") ?
     "Не вмикайте потужні прилади одночасно" : null;
   return {status, reason, appliances: items, simultaneousWarning};
 }
@@ -182,6 +186,14 @@ function voltageBand(volts) {
   return "red";
 }
 
+function outputPowerBand(watts) {
+  if (watts < 200) return "green";
+  if (watts < 300) return "yellow";
+  if (watts < 400) return "orange";
+  if (watts < 500) return "red";
+  return "deep-red";
+}
+
 function renderRecommendation(recommendation, forceUnknown) {
   const value = forceUnknown ? {
     status: "unknown", reason: UNAVAILABLE_REASON,
@@ -212,8 +224,13 @@ function renderStation(station, forceStale = false) {
   element(`#${prefix}-title`).textContent = station.label;
   element(`#${prefix}-state`).textContent = unavailable ? "Дані недоступні" : stateText[station.state];
   element(`#${prefix}-charge`).textContent = unavailable ? "—" : `${station.chargePercent}%`;
-  element(`#${prefix}-input`).textContent = unavailable ? "—" : `${station.inputWatts} Вт`;
-  element(`#${prefix}-output`).textContent = unavailable ? "—" : `${station.outputWatts} Вт`;
+  const input = element(`#${prefix}-input`);
+  input.textContent = unavailable ? "—" : `${station.inputWatts} Вт`;
+  input.className = `power-flow ${!unavailable && station.inputWatts === 0 ? "power-input-zero" : "power-neutral"}`;
+  const output = element(`#${prefix}-output`);
+  output.textContent = unavailable ? "—" : `${station.outputWatts} Вт`;
+  output.className = unavailable ? "power-flow power-neutral" :
+    `power-flow power-output-${outputPowerBand(station.outputWatts)}`;
   const voltage = element(`#${prefix}-voltage`);
   voltage.textContent = unavailable ? "—" : `${station.acInputVolts} В`;
   voltage.className = `voltage voltage-${unavailable ? "neutral" : voltageBand(station.acInputVolts)}`;
