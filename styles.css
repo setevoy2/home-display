@@ -50,6 +50,10 @@ h2 { margin: 0; font-size: clamp(1.8rem, 4vw, 2.7rem); }
 .metrics div { min-height: 70px; padding: 10px 12px; border-radius: 14px; background: #0b1017; }
 dt { color: #9eabbc; font-size: .92rem; }
 dd { margin: 4px 0 0; font-size: clamp(1.25rem, 3vw, 1.8rem); font-weight: 750; font-variant-numeric: tabular-nums; }
+.voltage-green { color: #56e39f; }
+.voltage-yellow { color: #f2c14e; }
+.voltage-red { color: #ff7f85; }
+.voltage-neutral { color: #f5f7fa; }
 .remaining { grid-column: 1 / -1; }
 .freshness { margin: 14px 0 0; color: #9eabbc; font-size: .95rem; }
 @media (orientation: portrait) {

@@ -168,6 +168,12 @@ function formatFreshness(observedAt) {
   return `Оновлено ${Math.floor(age / 60)} хв тому`;
 }
 
+function voltageBand(volts) {
+  if (volts >= 215 && volts <= 253) return "green";
+  if ((volts >= 205 && volts <= 214) || (volts >= 254 && volts <= 260)) return "yellow";
+  return "red";
+}
+
 function renderRecommendation(recommendation, forceUnknown) {
   const value = forceUnknown ? {
     status: "unknown", reason: UNAVAILABLE_REASON,
@@ -200,7 +206,9 @@ function renderStation(station, forceStale = false) {
   element(`#${prefix}-charge`).textContent = unavailable ? "—" : `${station.chargePercent}%`;
   element(`#${prefix}-input`).textContent = unavailable ? "—" : `${station.inputWatts} Вт`;
   element(`#${prefix}-output`).textContent = unavailable ? "—" : `${station.outputWatts} Вт`;
-  element(`#${prefix}-voltage`).textContent = unavailable ? "—" : `${station.acInputVolts} В`;
+  const voltage = element(`#${prefix}-voltage`);
+  voltage.textContent = unavailable ? "—" : `${station.acInputVolts} В`;
+  voltage.className = `voltage voltage-${unavailable ? "neutral" : voltageBand(station.acInputVolts)}`;
   const label = element(`#${prefix}-remaining-label`);
   const value = element(`#${prefix}-remaining`);
   if (!unavailable && station.remainingMinutes !== null && station.state !== "idle") {
