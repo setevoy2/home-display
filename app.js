@@ -2,6 +2,7 @@
 
 const MAX_FRESHNESS_MS = 300000;
 const CLOCK_SKEW_MS = 120000;
+const DATA_URL = "https://raw.githubusercontent.com/setevoy2/home-display/data/data.json";
 const UNAVAILABLE_REASON = "Дані застаріли - рекомендацією не користуватися";
 const RECOMMENDATION_POLICY_VERSION = 2;
 const APPLIANCES = [
@@ -15,6 +16,7 @@ const APPLIANCE_KEYS = ["id", "name", "reason", "status"];
 const STATUS = ["allowed", "caution", "avoid", "unknown"];
 let lastValidPayload = null;
 let refreshInFlight = null;
+let refreshTimer = null;
 let lastRefreshFailed = false;
 
 const element = selector => document.querySelector(selector);
@@ -161,7 +163,7 @@ function showBanner(message) { banner.textContent = message; banner.hidden = fal
 function hideBanner() { banner.textContent = ""; banner.hidden = true; }
 
 const stateText = {charging: "Заряджається", discharging: "Віддає заряд", idle: "Очікує", unknown: "Дані недоступні"};
-const adviceText = {allowed: "Можна вмикати", caution: "Краще не вмикати", avoid: "Не вмикайте", unknown: "Не покладайтеся на рекомендацію"};
+const adviceText = {allowed: "Можна вмикати", caution: "Краще не вмикати", avoid: "Не вмикайте", unknown: "Дані недоступні"};
 const applianceText = {allowed: "Можна", caution: "Обережно", avoid: "Не вмикати", unknown: "Невідомо"};
 
 function formatMinutes(minutes) {
@@ -264,7 +266,7 @@ async function performRefresh() {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
   try {
-    const response = await fetch(`data.json?t=${Date.now()}`, {cache: "no-store", signal: controller.signal});
+    const response = await fetch(`${DATA_URL}?t=${Date.now()}`, {cache: "no-store", signal: controller.signal});
     if (!response.ok) throw new Error("request failed");
     const payload = await response.json();
     if (!validPayload(payload)) throw new Error("invalid payload");
@@ -286,6 +288,14 @@ function refresh() {
   return refreshInFlight;
 }
 
-refresh();
+function scheduleRefresh() {
+  if (refreshTimer !== null) return;
+  refreshTimer = setTimeout(async () => {
+    refreshTimer = null;
+    await refresh();
+    scheduleRefresh();
+  }, lastValidPayload ? 30000 : 5000);
+}
+
+refresh().finally(scheduleRefresh);
 setInterval(updateStaleness, 1000);
-setInterval(refresh, 30000);
